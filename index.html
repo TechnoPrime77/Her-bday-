@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Catch My Hearts ❤️</title>
+<title>Catch My Hearts</title>
 
 <style>
 
@@ -13,21 +13,46 @@ font-family:system-ui;
 background:linear-gradient(180deg,#ff9a9e,#fad0c4);
 }
 
-/* top UI bar */
+/* START SCREEN */
+
+#start{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+display:flex;
+justify-content:center;
+align-items:center;
+background:linear-gradient(180deg,#ff758c,#ff7eb3);
+color:white;
+font-size:28px;
+text-align:center;
+z-index:10;
+}
+
+#start small{
+display:block;
+font-size:16px;
+margin-top:10px;
+opacity:0.85;
+}
+
+/* COUNTER UI */
 
 #ui{
 position:fixed;
 top:15px;
 left:50%;
 transform:translateX(-50%);
-background:rgba(255,255,255,0.85);
+background:rgba(255,255,255,0.9);
 padding:10px 18px;
 border-radius:20px;
 font-weight:600;
 box-shadow:0 5px 12px rgba(0,0,0,0.15);
 }
 
-/* heart style */
+/* HEART SHAPE */
 
 .heart{
 position:absolute;
@@ -35,7 +60,7 @@ width:45px;
 height:45px;
 background:red;
 transform:rotate(-45deg);
-cursor:pointer;
+animation:pulse 1.5s infinite;
 }
 
 .heart:before,
@@ -48,24 +73,32 @@ background:red;
 border-radius:50%;
 }
 
-.heart:before{
-top:-22px;
-left:0;
+.heart:before{ top:-22px; left:0 }
+.heart:after{ left:22px; top:0 }
+
+/* HEART PULSE */
+
+@keyframes pulse{
+0%{transform:scale(1) rotate(-45deg)}
+50%{transform:scale(1.1) rotate(-45deg)}
+100%{transform:scale(1) rotate(-45deg)}
 }
 
-.heart:after{
-left:22px;
-top:0;
-}
-
-/* heart animation */
+/* FALL + DRIFT */
 
 @keyframes fall{
-from{transform:translateY(-100px) rotate(-45deg)}
-to{transform:translateY(110vh) rotate(-45deg)}
+0%{
+transform:translateY(-100px) translateX(0) rotate(-45deg);
+}
+50%{
+transform:translateY(50vh) translateX(30px) rotate(-45deg);
+}
+100%{
+transform:translateY(110vh) translateX(-30px) rotate(-45deg);
+}
 }
 
-/* popup */
+/* POPUP MESSAGE */
 
 #popup{
 position:fixed;
@@ -73,13 +106,13 @@ top:50%;
 left:50%;
 transform:translate(-50%,-50%) scale(0);
 background:white;
-padding:30px;
-border-radius:25px;
+padding:28px;
+border-radius:22px;
 width:80%;
 max-width:320px;
 text-align:center;
 box-shadow:0 12px 35px rgba(0,0,0,0.3);
-transition:0.35s;
+transition:0.3s;
 }
 
 #popup.show{
@@ -87,11 +120,11 @@ transform:translate(-50%,-50%) scale(1);
 }
 
 #message{
-font-size:18px;
-line-height:1.4;
+font-size:17px;
+line-height:1.5;
 }
 
-/* final screen */
+/* END SCREEN */
 
 #finish{
 position:fixed;
@@ -105,9 +138,25 @@ justify-content:center;
 align-items:center;
 text-align:center;
 color:white;
-font-size:28px;
-padding:40px;
+padding:30px;
 display:none;
+}
+
+#finishText{
+max-width:320px;
+font-size:22px;
+line-height:1.5;
+}
+
+/* PARTICLE EXPLOSION */
+
+.particle{
+position:absolute;
+width:8px;
+height:8px;
+background:#ff2e63;
+border-radius:50%;
+pointer-events:none;
 }
 
 </style>
@@ -115,15 +164,22 @@ display:none;
 
 <body>
 
-<div id="ui">0 / 5 collected</div>
+<div id="start">
+<div>
+❤️ Catch the Hearts ❤️
+<small>tap to start</small>
+</div>
+</div>
+
+<div id="ui">❤️ 0 / 5 Hearts Found</div>
 
 <div id="popup">
 <div id="message"></div>
-<p style="margin-top:15px;font-size:14px;color:gray;">tap to continue</p>
+<p style="margin-top:12px;font-size:13px;color:gray;">tap to continue</p>
 </div>
 
 <div id="finish">
-<div>
+<div id="finishText">
 🎉 Happy Birthday ❤️<br><br>
 You caught every heart.<br>
 Just like you caught mine.
@@ -141,40 +197,93 @@ const messages=[
 ]
 
 let collected=0
-let gamePaused=false
+let paused=true
 
-const ui=document.getElementById("ui")
 const popup=document.getElementById("popup")
 const messageBox=document.getElementById("message")
+const ui=document.getElementById("ui")
 
 function updateUI(){
-ui.innerText=`${collected} / ${messages.length} collected`
+ui.innerText=`❤️ ${collected} / ${messages.length} Hearts Found`
 }
+
+/* PARTICLE EXPLOSION */
+
+function explode(x,y){
+
+for(let i=0;i<12;i++){
+
+const p=document.createElement("div")
+p.className="particle"
+
+p.style.left=x+"px"
+p.style.top=y+"px"
+
+document.body.appendChild(p)
+
+const angle=Math.random()*Math.PI*2
+const distance=40+Math.random()*40
+
+const dx=Math.cos(angle)*distance
+const dy=Math.sin(angle)*distance
+
+p.animate([
+{transform:"translate(0,0)",opacity:1},
+{transform:`translate(${dx}px,${dy}px)`,opacity:0}
+],{duration:600,easing:"ease-out"})
+
+setTimeout(()=>p.remove(),600)
+
+}
+
+}
+
+/* PAUSE / RESUME */
+
+function pauseHearts(){
+document.querySelectorAll(".heart").forEach(h=>{
+h.style.animationPlayState="paused"
+})
+paused=true
+}
+
+function resumeHearts(){
+document.querySelectorAll(".heart").forEach(h=>{
+h.style.animationPlayState="running"
+})
+paused=false
+}
+
+/* SPAWN HEART */
 
 function spawnHeart(){
 
-if(gamePaused) return
+if(collected>=messages.length) return
 
 const heart=document.createElement("div")
 heart.className="heart"
 
 heart.style.left=Math.random()*85+"vw"
 
-const duration=6+Math.random()*4
-heart.style.animation=`fall ${duration}s linear`
+const duration=7+Math.random()*3
+heart.style.animation+=`, fall ${duration}s linear`
 
 document.body.appendChild(heart)
 
-heart.addEventListener("touchstart",()=>{
-if(gamePaused) return
+heart.addEventListener("touchstart",(e)=>{
 
-gamePaused=true
+if(paused) return
 
-heart.style.animationPlayState="paused"
+pauseHearts()
+
+const rect=heart.getBoundingClientRect()
+explode(rect.left+20,rect.top+20)
 
 messageBox.innerText=messages[collected]
 
 popup.classList.add("show")
+
+heart.remove()
 
 })
 
@@ -184,17 +293,14 @@ heart.remove()
 
 }
 
+/* CLOSE MESSAGE */
+
 popup.addEventListener("touchstart",()=>{
 
 popup.classList.remove("show")
 
 collected++
-
 updateUI()
-
-document.querySelectorAll(".heart").forEach(h=>h.remove())
-
-gamePaused=false
 
 if(collected>=messages.length){
 
@@ -203,23 +309,32 @@ return
 
 }
 
-spawnHeart()
+resumeHearts()
 
 })
 
+/* GAME LOOP */
+
 function gameLoop(){
 
-spawnHeart()
-
 setInterval(()=>{
-if(!gamePaused) spawnHeart()
-},1400)
+if(!paused && collected<messages.length){
+spawnHeart()
+}
+},1500)
 
 }
 
-updateUI()
+/* START GAME */
 
+document.getElementById("start").addEventListener("touchstart",()=>{
+document.getElementById("start").style.display="none"
+paused=false
+spawnHeart()
 gameLoop()
+})
+
+updateUI()
 
 </script>
 
